@@ -1,0 +1,277 @@
+---
+title: "L'Italia alle olimpiadi"
+author: "Rapicavoli Fabiana"
+date: "01/08/2021"
+output: ioslides_presentation
+---
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#caricamento delle librerie
+library(dplyr)
+library(tidyverse)
+library(tidytext)
+library(data.table)
+library(gridExtra)
+library(knitr)
+#per grafici
+library(ggplot2)
+library(plotly)
+library(scales)
+```
+
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+dataset <- read.csv("athlete_events.csv")
+```
+
+#Primati italiani
+
+I Giochi Olimpici  non sono dei semplici campionati mondiali ma soprattutto “la festa quadriennale della gioventù internazionale, della primavera umana di tutte le forme dell’attività giovanile" - Pierre Fredy de Coubertin
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#Nell'anno 2021, anno in cui l'Italia ha vinto, tra le varie cose, gli europei di Calcio e l'Eurovision, nel periodo in cui si stanno giocando a Tokio le olimpiadi 2020, mi sono chiesta: nello storico olimpico, dall'anno 1896 ad Atene al 2016 a Rio, Gli italiano vantano dei primati olimpionici? Ci sono degli sport in cui gli italiani hanno vinto più medaglie dell'unione di tutte le altre nazioni?
+
+italianMedals <- dataset %>%
+  filter(Team=="Italy" & !(is.na(Medal))) %>%
+  group_by(Event) %>%
+  summarise(itan = n())
+
+totalMedals <- dataset %>%
+  filter(!(is.na(Medal))) %>%
+  group_by(Event) %>%
+  summarise(n = n())
+
+ItalianPrimacy <- inner_join(italianMedals, totalMedals) %>%
+  filter(itan > n - itan)
+
+semi_join(dataset, ItalianPrimacy) %>%
+  filter(Team=="Italy" & !(is.na(Medal))) %>%
+  select(Name, Year, Medal, Event)
+
+#La risposta è affermativa per sole due discipline e, per mia sorpresa, neppure sportive, ma artistiche.
+#Fino ad alcuni anni fa, alle olimpiadi si gareggiava anche per l'arte ed era addirittura possibile vincere dei premi postumi.
+#Vantano del primato italiano le displicine artistiche per la musica con Gabriele Bianchi, che ha vinto il bronzo nel 1948 a Londra e che era un compositore che ha studiato al conservatorio di venezia e per la disciplina per la letturatura ha vinto l'argento lo scrittore Lauro Adolfo De Bosis con Icaro, il dramma in versi, nel 1928 ad Amsterdam.
+#Purtroppo nessun oro.
+```
+
+##Top 10 degli sport in cui l'Italia ha vinto più medaglie
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#in un modo più modesto, mi sono chiesta, limitatamente ai tre sport in cui l'italia ha vinto più medaglie, quali sono le nazioni che l'Italia ha battuto più spesso?
+
+#il numero di tutte le medaglie vinte dall'italia per ogni disciplina
+italianMedals <- dataset %>%
+  filter(Team=="Italy" & !(is.na(Medal))) %>%
+  group_by(Sport) %>%
+  summarise(itan = n()) %>%
+  mutate(Team2 = "Italy") %>%
+  #filter(Team!="Italy", itan <= n) %>% 
+  select(Sport, Team2, itan)
+
+ItalianPrimacytop10 <- italianMedals %>% arrange(-itan) %>% head(10) %>% select(Sport, itan)
+
+plot_ly(ItalianPrimacytop10, labels = ~Sport, values = ~itan, type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent') %>% 
+  layout(title = 'Top 10 degli sport in cui gli italiani hanno vinto più medaglie',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+##Quali sono le nazioni che l'Italia ha battuto più spesso nei primi tre sport in cui l'Italia eccelle (ciclismo, cannotaggio e scherma)?
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+losers <- dataset %>%
+  filter(!(is.na(Medal)) & Team!="Italy") %>%
+  group_by(Team, Sport) %>%
+  summarise(n=n()) %>%
+  ungroup()
+
+fullItalianPrymacy <- inner_join(losers, ItalianPrimacytop10) %>%
+  filter(n < itan) %>%
+  select(Team, Sport, n)
+
+ItalianPrimacytop102 <- ItalianPrimacytop10 %>%
+  mutate(Team="Italy") %>%
+  select(Sport, Team, itan)
+names(ItalianPrimacytop102)[3] <- "n"
+
+fullItalianPrymacy <- full_join(fullItalianPrymacy, ItalianPrimacytop102)
+
+#top tre delle displipline in cui l'italia ha vinto più medaglie
+full3 <- fullItalianPrymacy %>% filter(Sport=="Fencing") %>% arrange(-n)
+
+plot_ly(full3, 
+  x = ~Team,
+  y = ~n,
+  name = "Fencing",
+  type = "bar",
+  marker = list(color = c('rgba(222,45,38,0.8)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)'))
+) %>% 
+  layout(title = "Scherma",
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+```
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+full2 <- fullItalianPrymacy %>% filter(Sport=="Rowing") %>% arrange(-n)
+
+plot_ly(full2, 
+  x = ~Team,
+  y = ~n,
+  name = "Rowing",
+  type = "bar",
+  marker = list(color = c('rgba(222,45,38,0.8)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)'))
+) %>% 
+  layout(title = "Cannottaggio",
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+```
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+full1 <- fullItalianPrymacy %>% filter(Sport=="Cycling") %>% arrange(-n)
+
+plot_ly(full1, 
+  x = ~Team,
+  y = ~n,
+  name = "Cycling",
+  type = "bar",
+  marker = list(color = c('rgba(222,45,38,0.8)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)', 'rgba(204,204,204,1)'))
+  ) %>% 
+  layout(title = "Ciclismo",
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+```
+
+##In media, l'Italia vince più medaglie di quali nazioni?
+Nota: si considerano solo le nazioni che hanno vinto almeno dieci medaglie in meno dell'Italia, le altre vengono considerate come di paritaria forzae bravura.
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#il numero di tutte le medaglie per displicina per ogni nazione
+totalMedals <- dataset %>%
+  filter(!(is.na(Medal))) %>%
+  group_by(Sport, Team) %>%
+  summarise(n = n()) %>%
+  ungroup() 
+
+#tutte le discipline per cui altri stati sono stati peggiori dell'italia e hanno vinto meno medaglie
+ItalianPrimacy <- right_join(totalMedals, italianMedals) %>%
+  filter(Team!="Italy", itan > n) %>% 
+  select(Sport, Team, n)
+
+names(italianMedals)[2] <- "Team"
+names(italianMedals)[3] <- "n"
+  
+fullItalianPrymacy <- full_join(italianMedals, ItalianPrimacy, by = c("Sport", "Team", "n")) %>%
+  arrange(Sport, -n)
+
+top10losers <- fullItalianPrymacy %>%
+  group_by(Team) %>%
+  summarise(n=n()) %>%
+  arrange(-n) %>%
+  head(31)
+
+plot_ly(top10losers,
+  x = ~Team,
+  y = ~n,
+  name = "losers",
+  type = "bar",
+  marker = list(color = c('rgb(55, 83, 109)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)'))
+)  %>% 
+  layout(title = "L'Italia è più forte di quali altre nazioni?",
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+  
+#gli Unified Team sono le squadre sportive dell'ex-Unione Sovietica.
+#Il grafico mostra tutte le nazizioni che hanno vinto almeno 16 medaglie in meno dell'Italia
+```
+
+#Media dell'età, del peso e dell'altezza dei campioni internazionali e italiani dei 10 sport in cui l'Italia è più forte
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#NON FUNZIONA
+datasettop10 <- inner_join(dataset, ItalianPrimacytop10, by="Sport") %>%
+  filter(!(is.na(Age)), !(is.na(Height)), !(is.na(Weight)), Team!="Italy") %>%
+  select(ID, Age, Height, Weight, Sport)
+
+datasettop10ita <- inner_join(dataset, ItalianPrimacytop10, by="Sport") %>%
+  filter(!(is.na(Age)), !(is.na(Height)), !(is.na(Weight)), Team=="Italy") %>%
+  select(ID, Age, Height, Weight, Sport)
+
+meantop10 <- aggregate(datasettop10[, 2:4], list(datasettop10$Sport), mean)
+meantop10ita <- aggregate(datasettop10ita[, 2:4], list(datasettop10ita$Sport), mean)
+names(meantop10ita)[2] <- "Age-ita"
+names(meantop10ita)[3] <- "Height-ita"
+names(meantop10ita)[4] <- "Weight-ita"
+
+aggregation <- inner_join(meantop10, meantop10ita)
+names(aggregation)[1] <- "Sport"
+aggregation
+```
+
+##Distribuzione delle medaglie vinte negli anni
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+itatop10 <- inner_join(dataset, ItalianPrimacytop10) %>%
+  filter(Team=="Italy", !(is.na(Medal))) %>%
+  select(Year, Sport) %>%
+  group_by(Year) %>%
+  summarise(n=n()) 
+
+plot_ly(data = itatop10, x = ~Year, y = ~n,
+       marker = list(size = 10,
+                     color = 'rgba(255, 182, 193, .9)',
+                     line = list(color = 'rgba(152, 0, 0, .8)',
+                                 width = 2))) %>% 
+  layout(title = 'Distribuzione delle medaglie vinte negli anni',
+         yaxis = list(zeroline = FALSE),
+         xaxis = list(zeroline = FALSE))
+```
+
+##Distribuzione delle medaglie vinte negli anni per Sport
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+itatop10 <- inner_join(dataset, ItalianPrimacytop10) %>%
+  filter(Team=="Italy", !(is.na(Medal))) %>%
+  select(Year, Sport) %>%
+  group_by(Year, Sport) %>%
+  summarise(n=n()) 
+
+plot_ly(data = itatop10, x = ~Year, y = ~n, color = ~Sport, colors = "Set1",
+        text = ~paste("Anno: ", Year, '$<br>Sport:', Sport, '$<br>N medaglie:', n)) %>% 
+  layout(title = 'Distribuzione delle medaglie vinte negli anni per Sport',
+         yaxis = list(zeroline = FALSE),
+         xaxis = list(zeroline = FALSE))
+```
+
+##Panoramica mondiale sul successo olimpinico dei vari Stati
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+# count number of medals awarded to each Team
+medal_counts <- dataset %>% 
+  filter(!is.na(Medal))%>% 
+  group_by(NOC, Medal, Event, Games) %>%
+  summarize(isMedal=1) %>% 
+  group_by(NOC, Medal) %>%
+  summarize(Count= sum(isMedal)) %>%
+  left_join(noc, by= "NOC" ) %>% 
+  mutate (Team = region) %>% 
+  select( Medal, Team, Count)
+
+# order Team by total medal count
+levs <- medal_counts %>%
+  group_by(Team) %>%
+  summarize(Total=sum(Count)) %>%
+  arrange(desc(Total)) %>%
+  select(Team) %>%
+  slice(10:1)
+
+medal_counts <- distinct(medal_counts)
+
+medal_counts$Team <- factor(medal_counts$Team, levels=levs$Team)
+medal_counts <- medal_counts %>% filter(Team != "NA")
+# plot
+ggplot(medal_counts, aes(x=Team, y=Count, fill=Medal)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values=c("gold4","gold1","gray70")) +
+  ggtitle("Storico delle medaglie vinte dalle varie nazioni") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
